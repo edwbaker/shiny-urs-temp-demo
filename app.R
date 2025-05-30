@@ -12,6 +12,8 @@ library(NHMDE)
 library(lubridate)
 library(ggplot2)
 library(bslib)
+library(sonicscrewdriver)
+library(plotrix)
 
 load("sensors.RData")
 
@@ -46,27 +48,54 @@ ui <- fluidPage(
               "Sensors",
               choices = unique(data$sensor_id),
               selected = c("28-00000f9d74ea")
-            ),
-            tags$label("Options"),
-            checkboxInput(
-              "DeltaT",
-              "Show Delta T",
-              value = FALSE
-            ),
+            )
+
+          ),
+
+          # Show a plot of the generated distribution
+          mainPanel(
+            navset_tab(
+              nav_panel(
+                "Waveform",
+                plotOutput("timeSeries"),
+                htmlOutput("timeSeriesNotes"),
+                selectInput(
+                  "DailyExtremes",
+                  "Show daily extremes",
+                  choices = c("None",unique(data$sensor_id))
+                )
+              ),
+              nav_panel(
+                "Temporal Coverage",
+                htmlOutput("deltaThead"),
+                plotOutput("deltaT")
+              ),
+              nav_panel(
+                "Degree-Days",
+                htmlOutput("AccD")
+              )
+            )
+          )
+        )
+      ),
+      nav_panel(
+        "Diel Plot",
+        sidebarLayout(
+          sidebarPanel(
+            selectInput(
+              "sensors",
+              "Sensors",
+              choices = unique(data$sensor_id),
+              selected = c("28-00000f9d74ea")
+            )
+          ),
+          mainPanel(
+            plotOutput("dielPlot"),
             selectInput(
               "DailyExtremes",
               "Show daily extremes",
               choices = c("None",unique(data$sensor_id))
             )
-          ),
-
-          # Show a plot of the generated distribution
-          mainPanel(
-            plotOutput("timeSeries"),
-            htmlOutput("timeSeriesNotes"),
-            htmlOutput("AccD"),
-            htmlOutput("deltaThead"),
-            plotOutput("deltaT")
           )
         )
       ),
@@ -78,7 +107,6 @@ ui <- fluidPage(
       )
     ),
     id = "tab"
-
 )
 
 # Define server logic required to draw a histogram
@@ -152,21 +180,17 @@ server <- function(input, output) {
 
     })
     output$deltaThead <- renderUI({
-      if (input$DeltaT) {
         tags$div(
           tags$h3("Delta T"),
           tags$p("Boxplot of the time difference between consecutive readings for the selected sensors.")
         )
-      }
     })
     output$deltaT <- renderPlot({
-      if (input$DeltaT) {
         start <- as.POSIXct(input$dates[1])
         end <- as.POSIXct(input$dates[2])+86400
         plot_data <- data[data$timestamp >= start & data$timestamp <= end, ]
         plot_data <- plot_data[plot_data$sensor_id %in% input$sensors, ]
         boxplot(diff(as.numeric(plot_data$timestamp)), horizontal=T)
-      }
     })
     output$summaryStats <- renderUI({
       tags$div(
@@ -182,6 +206,37 @@ server <- function(input, output) {
           )
         )
       )
+    })
+    output$dielPlot <- renderPlot({
+      start <- as.POSIXct(input$dates[1])
+      end <- as.POSIXct(input$dates[2])+86400
+      plot_data <- data[data$timestamp >= start & data$timestamp <= end, ]
+      plot_data <- plot_data[plot_data$sensor_id %in% input$sensors, ]
+
+      emptyDiel()
+
+      for (i in unique(plot_data$sensor_id)) {
+        angles <- dielFraction(plot_data[plot_data$sensor_id==i, "timestamp"])
+        values <- plot_data[plot_data$sensor_id==i, "value"]
+        values <- plot_data$value - min(plot_data$value, na.rm = TRUE)
+        values <- 2*values/max(values, na.rm = TRUE)
+        lines(x=cos(angles)*values, y=sin(angles)*values)
+      }
+
+
+      if (input$DailyExtremes != "None") {
+        start <- as.POSIXct(input$dates[1])
+        end <- as.POSIXct(input$dates[2])+86400
+        plot_data <- data[data$timestamp >= start & data$timestamp <= end, ]
+        dw <- plot_data[plot_data$sensor_id == input$DailyExtremes, ]
+        dw <- daily_delete_missing(dw, "timestamp", 60*60)
+
+        de <- daily_extremes(dw$value, dw$timestamp, breaks=T)
+
+        draw.radial.line(0,2, angle=dielFraction(de$date[de$type=="max"]), col="red")
+        draw.radial.line(0,2, angle=dielFraction(de$date[de$type=="min"]), col="blue")
+
+      }
     })
 }
 
