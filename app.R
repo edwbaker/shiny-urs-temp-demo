@@ -187,8 +187,14 @@ server <- function(input, output) {
         )
     })
     output$deltaT <- renderPlot({
-        start <- as.POSIXct(input$dates[1])
-        end <- as.POSIXct(input$dates[2])+86400
+      start <- as.POSIXct(input$dates[1])
+      second(start) <- 0
+      minute(start) <- 0
+      hour(start) <- 0
+      end <- as.POSIXct(input$dates[2])
+      second(end) <- 59
+      minute(end) <- 59
+      hour(end) <- 23
         plot_data <- data[data$timestamp >= start & data$timestamp <= end, ]
         plot_data <- plot_data[plot_data$sensor_id %in% input$sensors, ]
         td <- c()
@@ -216,7 +222,13 @@ server <- function(input, output) {
     })
     output$dielPlot <- renderPlot({
       start <- as.POSIXct(input$dates[1])
-      end <- as.POSIXct(input$dates[2])+86400
+      second(start) <- 0
+      minute(start) <- 0
+      hour(start) <- 0
+      end <- as.POSIXct(input$dates[2])
+      second(end) <- 59
+      minute(end) <- 59
+      hour(end) <- 23
       plot_data <- data[data$timestamp >= start & data$timestamp <= end, ]
       plot_data <- plot_data[plot_data$sensor_id %in% input$dielsensors, ]
 
@@ -233,7 +245,13 @@ server <- function(input, output) {
 
       if (input$dielDailyExtremes != "None") {
         start <- as.POSIXct(input$dates[1])
-        end <- as.POSIXct(input$dates[2])+86400
+        second(start) <- 0
+        minute(start) <- 0
+        hour(start) <- 0
+        end <- as.POSIXct(input$dates[2])
+        second(end) <- 59
+        minute(end) <- 59
+        hour(end) <- 23
         plot_data <- data[data$timestamp >= start & data$timestamp <= end, ]
         dw <- plot_data[plot_data$sensor_id == input$dielDailyExtremes, ]
         dw <- daily_delete_missing(dw, "timestamp", 60*60)
@@ -250,7 +268,13 @@ server <- function(input, output) {
         return()
       }
       start <- as.POSIXct(input$dates[1])
-      end <- as.POSIXct(input$dates[2])+86400
+      second(start) <- 0
+      minute(start) <- 0
+      hour(start) <- 0
+      end <- as.POSIXct(input$dates[2])
+      second(end) <- 59
+      minute(end) <- 59
+      hour(end) <- 23
       plot_data <- data[data$timestamp >= start & data$timestamp <= end, ]
       dw <- plot_data[plot_data$sensor_id == input$dielDailyExtremes, ]
       dw <- daily_delete_missing(dw, "timestamp", 60*60)
