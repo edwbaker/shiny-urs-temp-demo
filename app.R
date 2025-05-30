@@ -83,7 +83,7 @@ ui <- fluidPage(
         sidebarLayout(
           sidebarPanel(
             selectInput(
-              "sensors",
+              "dielsensors",
               "Sensors",
               choices = unique(data$sensor_id),
               selected = c("28-00000f9d74ea")
@@ -92,10 +92,11 @@ ui <- fluidPage(
           mainPanel(
             plotOutput("dielPlot"),
             selectInput(
-              "DailyExtremes",
+              "dielDailyExtremes",
               "Show daily extremes",
               choices = c("None",unique(data$sensor_id))
-            )
+            ),
+            plotOutput("dielBoxplots")
           )
         )
       ),
@@ -190,7 +191,13 @@ server <- function(input, output) {
         end <- as.POSIXct(input$dates[2])+86400
         plot_data <- data[data$timestamp >= start & data$timestamp <= end, ]
         plot_data <- plot_data[plot_data$sensor_id %in% input$sensors, ]
-        boxplot(diff(as.numeric(plot_data$timestamp)), horizontal=T)
+        td <- c()
+        for (i in unique(plot_data$sensor_id)) {
+          times <- sort(plot_data[plot_data$sensor_id == i, "timestamp"])
+          td <- c(td, diff(times))
+        }
+
+        boxplot(td, horizontal=T)
     })
     output$summaryStats <- renderUI({
       tags$div(
@@ -211,7 +218,7 @@ server <- function(input, output) {
       start <- as.POSIXct(input$dates[1])
       end <- as.POSIXct(input$dates[2])+86400
       plot_data <- data[data$timestamp >= start & data$timestamp <= end, ]
-      plot_data <- plot_data[plot_data$sensor_id %in% input$sensors, ]
+      plot_data <- plot_data[plot_data$sensor_id %in% input$dielsensors, ]
 
       emptyDiel()
 
@@ -224,11 +231,11 @@ server <- function(input, output) {
       }
 
 
-      if (input$DailyExtremes != "None") {
+      if (input$dielDailyExtremes != "None") {
         start <- as.POSIXct(input$dates[1])
         end <- as.POSIXct(input$dates[2])+86400
         plot_data <- data[data$timestamp >= start & data$timestamp <= end, ]
-        dw <- plot_data[plot_data$sensor_id == input$DailyExtremes, ]
+        dw <- plot_data[plot_data$sensor_id == input$dielDailyExtremes, ]
         dw <- daily_delete_missing(dw, "timestamp", 60*60)
 
         de <- daily_extremes(dw$value, dw$timestamp, breaks=T)
@@ -237,6 +244,23 @@ server <- function(input, output) {
         draw.radial.line(0,2, angle=dielFraction(de$date[de$type=="min"]), col="blue")
 
       }
+    })
+    output$dielBoxplots <- renderPlot({
+      if (input$dielDailyExtremes == "None") {
+        return()
+      }
+      start <- as.POSIXct(input$dates[1])
+      end <- as.POSIXct(input$dates[2])+86400
+      plot_data <- data[data$timestamp >= start & data$timestamp <= end, ]
+      dw <- plot_data[plot_data$sensor_id == input$dielDailyExtremes, ]
+      dw <- daily_delete_missing(dw, "timestamp", 60*60)
+
+      de <- daily_extremes(dw$value, dw$timestamp, breaks=T)
+
+      de <- de[de$type %in% c("max", "min"), ]
+
+      boxplot(value ~ type, data=de, horizontal=T)
+
     })
 }
 
