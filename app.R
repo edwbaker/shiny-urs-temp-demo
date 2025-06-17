@@ -46,7 +46,7 @@ ui <- fluidPage(
             checkboxGroupInput(
               "sensors",
               "Sensors",
-              choices = unique(data$sensor_id),
+              choices = sort(unique(data$sensor_id)),
               selected = c("28-00000f9d74ea")
             )
 
@@ -85,7 +85,7 @@ ui <- fluidPage(
             selectInput(
               "dielsensors",
               "Sensors",
-              choices = unique(data$sensor_id),
+              choices = sort(unique(data$sensor_id)),
               selected = c("28-00000f9d74ea")
             )
           ),
@@ -157,7 +157,7 @@ server <- function(input, output) {
 
       title <- tags$h3("Accumulated Degree-Days")
 
-      tags_list <- lapply(unique(plot_data$sensor_id), function(item) {
+      tags_list <- lapply(sort(unique(plot_data$sensor_id)), function(item) {
         tags$p(
           paste(#
             item,
