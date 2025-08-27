@@ -31,7 +31,7 @@ ui <- fluidPage(
             dateRangeInput(
               "dates",
               "Date Range",
-              start = "2025-05-15",
+              start = "2025-08-01",
               end = format(max(data$timestamp), format= "%Y-%m-%d"),
               min = NULL,
               max = NULL,
