@@ -111,7 +111,17 @@ ui <- fluidPage(
 )
 
 # Define server logic required to draw a histogram
-server <- function(input, output) {
+server <- function(input, output, session) {
+
+  observe({
+    query <- parseQueryString(session$clientData$url_search)
+    if (!is.null(query[['device']])) {
+      if (query[['device']] == "04") {
+        updateCheckboxGroupInput(session, "sensors", selected = c("Chalk Grassland Hill"))
+      }
+
+    }
+  })
 
     output$timeSeries <- renderPlot({
       start <- as.POSIXct(input$dates[1])
